@@ -1,14 +1,25 @@
 require 'statemachine'
-
 vending_machine = Statemachine.build do
-  trans :waiting, :dollar, :paid
-  trans :paid, :selection, :waiting
-  trans :waiting, :selection, :waiting
-  trans :paid, :dollar, :paid
+  superstate :operational do
+    trans :waiting, :dollar, :paid
+    trans :paid, :selection, :waiting
+    trans :waiting, :selection, :waiting
+    trans :paid, :dollar, :paid
+
+    event :repair, :repair_mode, Proc.new { puts "Entering Repair Mode" }
+  end
+
+  trans :repair_mode, :operate, :operational_H, Proc.new { puts "Exiting Repair Mode" }
+
+  on_entry_of :waiting, Proc.new { puts "Entering Waiting State" }
+  on_entry_of :paid, Proc.new { puts "Entering Paid State" }
 end
 
-puts vending_machine.state
+vending_machine.repair
+vending_machine.operate
 vending_machine.dollar
-puts vending_machine.state
-vending_machine.selection
-puts vending_machine.state
+vending_machine.repair
+vending_machine.operate
+
+
+
