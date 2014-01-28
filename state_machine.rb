@@ -1,40 +1,48 @@
 require 'statemachine'
 class VendingMachineContext
-  def activate
-    puts "activating"
+  attr_accessor :statemachine
+
+  def initialize
+    @amount_tendered = 0
   end
 
-  def release(product)
-    puts "releasing product: #{product}"
+  def add_coin
+    @amount_tendered = @amount_tendered + 25
   end
 
-  def refund
-    puts "refunding dollar"
+  def count_amount_tendered
+    if @amount_tendered >= 100
+      @statemachine.paid
+    else
+      @statemachine.not_paid_yet
+    end
   end
 
-  def sales_mode
-    puts "going into sales mode"
+  def prompt_money
+    puts "$.#{@amount_tendered}: more money please"
   end
 
-  def operation_mode
-    puts "going into operation mode"
+  def prompt_selection
+    puts "Please make a selection"
   end
 end
 
 vending_machine = Statemachine.build do
-  state :waiting do
-    event :dollar, :paid, :activate
-    event :selection, :waiting
-    on_entry :sales_mode
-    on_exit :operation_mode
+  trans :accept_money, :coin, :coin_inserted, :add_coin
+  state :coin_inserted do
+    event :not_paid_yet, :accept_money, :prompt_money
+    event :paid, :await_selection, :prompt_selection
+    on_entry :count_amount_tendered
   end
-  trans :paid, :selection, :waiting, :release
-  trans :paid, :dollar, :paid, :refund
   context VendingMachineContext.new
 end
+vending_machine.context.statemachine = vending_machine
+
+
+vending_machine.coin
+vending_machine.coin
+vending_machine.coin
+vending_machine.coin
 
 
 
-vending_machine.dollar
-vending_machine.dollar
-vending_machine.selection "Peanuts"
