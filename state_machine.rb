@@ -1,48 +1,25 @@
 require 'statemachine'
-class VendingMachineContext
-  attr_accessor :statemachine
-
-  def initialize
-    @amount_tendered = 0
-  end
-
-  def add_coin
-    @amount_tendered = @amount_tendered + 25
-  end
-
-  def count_amount_tendered
-    if @amount_tendered >= 100
-      @statemachine.paid
-    else
-      @statemachine.not_paid_yet
-    end
-  end
-
-  def prompt_money
-    puts "$.#{@amount_tendered}: more money please"
-  end
-
-  def prompt_selection
-    puts "Please make a selection"
-  end
-end
-
 vending_machine = Statemachine.build do
-  trans :accept_money, :coin, :coin_inserted, :add_coin
-  state :coin_inserted do
-    event :not_paid_yet, :accept_money, :prompt_money
-    event :paid, :await_selection, :prompt_selection
-    on_entry :count_amount_tendered
+  superstate :operational do
+    trans :waiting, :dollar, :paid
+    trans :paid, :selection, :waiting
+    trans :waiting, :selection, :waiting
+    trans :paid, :dollar, :paid
+
+    event :repair, :repair_mode, Proc.new { puts "Entering Repair Mode" }
   end
-  context VendingMachineContext.new
+
+  trans :repair_mode, :operate, :operational_H, Proc.new { puts "Exiting Repair Mode" }
+
+  on_entry_of :waiting, Proc.new { puts "Entering Waiting State" }
+  on_entry_of :paid, Proc.new { puts "Entering Paid State" }
 end
-vending_machine.context.statemachine = vending_machine
 
-
-vending_machine.coin
-vending_machine.coin
-vending_machine.coin
-vending_machine.coin
+vending_machine.repair
+vending_machine.operate
+vending_machine.dollar
+vending_machine.repair
+vending_machine.operate
 
 
 
